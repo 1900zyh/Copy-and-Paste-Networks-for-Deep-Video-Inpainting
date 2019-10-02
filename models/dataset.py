@@ -20,6 +20,7 @@ import tqdm
 
 import matplotlib.pyplot as plt
 import zipfile
+from models.transform import get_video_masks_by_moving_random_stroke
 
 class ZipReader(object):
   file_dict = dict()
@@ -51,7 +52,7 @@ class dataset(data.Dataset):
     with open(os.path.join('../flist', data_name, 'mask.json'), 'r') as f:
       self.mask_dict = json.load(f)
     self.masks = list(self.mask_dict.keys())
-    self.size = size
+    self.size = self.h, self.w = size
     self.mask_type = mask_type
     self.data_name = data_name
 
@@ -88,13 +89,18 @@ class dataset(data.Dataset):
 
     N_frames = np.empty((N, H, W, 3), dtype=np.float32)
     N_masks = np.empty((N, H, W, 1), dtype=np.float32)
+    if self.mask_type == 'random_obj':
+      masks = [torch.from_numpy(np.array(m).astype(np.uint8)) for m in get_video_masks_by_moving_random_stroke(len(frame_names), imageWidth=self.w, imageHeight=self.h)]
     for i, f in enumerate(frame_names):
       img = ZipReader.imread('../datazip/{}/JPEGImages/{}.zip'.format(self.data_name, video), f)
       raw_frame = np.array(img.convert('RGB'))/255.
       N_frames[i] = cv2.resize(raw_frame, dsize=(W, H), interpolation=cv2.INTER_LINEAR)
 
-      raw_mask = self._get_masks(index, video, i)
-      raw_mask = cv2.resize(raw_mask, dsize=(W, H), interpolation=cv2.INTER_NEAREST)
+      if self.mask_type == 'random_obj':
+        raw_mask = np.array(masks[i]).astype(np.uint8)
+      else:
+        raw_mask = self._get_masks(index, video, i)
+        raw_mask = cv2.resize(raw_mask, dsize=(W, H), interpolation=cv2.INTER_NEAREST)
       N_masks[i,:,:,0] = raw_mask.astype(np.float32)
 
     Fs = torch.from_numpy(np.transpose(N_frames, (3, 0, 1, 2)).copy()).float()
