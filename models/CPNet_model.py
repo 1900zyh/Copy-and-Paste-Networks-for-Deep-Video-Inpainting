@@ -287,7 +287,7 @@ class CPNet(nn.Module):
 
     comp = torch.clamp(comp, 0, 1)
     pred = torch.clamp(pred, 0, 1)
-    return comp, pred, gt*(1.-hole), gt
+    return comp, pred, gt*(1.-hole), gt, aligned_r_
 
 
   def forward(self, *args, **kwargs):

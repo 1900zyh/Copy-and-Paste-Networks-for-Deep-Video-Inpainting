@@ -86,6 +86,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
   Pset = dataset(DATA_NAME, MASK_TYPE)
   step = math.ceil(len(Pset) / ngpus_per_node)
+  step = 2
   Pset = torch.utils.data.Subset(Pset, range(gpu*step, min(gpu*step+step, len(Pset))))
   Trainloader = torch.utils.data.DataLoader(Pset, batch_size=1, shuffle=False, num_workers=0, drop_last=True)
 
@@ -137,7 +138,7 @@ def main_worker(gpu, ngpus_per_node, args):
             ridx.append(i)
         
         with torch.no_grad():
-          comp, pred, masked, orig = model(rfeats[:,:,ridx], frames[:,:,ridx], masks[:,:,ridx], frames[:,:,f], masks[:,:,f], GTs[:,:,f])
+          comp, pred, masked, orig, aligned_rfs = model(rfeats[:,:,ridx], frames[:,:,ridx], masks[:,:,ridx], frames[:,:,f], masks[:,:,f], GTs[:,:,f])
           c_s = comp.shape
           Fs = torch.empty((c_s[0], c_s[1], 1, c_s[2], c_s[3])).float().cuda()
           Hs = torch.zeros((c_s[0], 1, 1, c_s[2], c_s[3])).float().cuda()
@@ -145,6 +146,12 @@ def main_worker(gpu, ngpus_per_node, args):
           frames[:,:,f] = Fs[:,:,0]
           masks[:,:,f] = Hs[:,:,0]                
           rfeats[:,:,f] = model(Fs, Hs)[:,:,0]
+
+        #######debug  warping######
+        Image.fromarray((orig[0].cpu().permute(1,2,0).numpy()*255).astype(np.uint8)).save('orig.png')
+        for i in range(len(aligned_rfs)):
+          rf = Image.fromarray((aligned_rfs[i][0].cpu().permute(1,2,0).numpy()*255).astype(np.uint8)).save('ref_{}.png'.format(str(i).zfill(3)))
+        return 
 
         if t == 1:
           est = comp0[:,:,f] * (len(index)-f) / len(index) + comp.detach() * f / len(index)
