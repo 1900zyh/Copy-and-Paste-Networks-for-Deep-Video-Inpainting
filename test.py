@@ -144,7 +144,7 @@ def main_worker(gpu, ngpus_per_node, args):
           Fs[:,:,0] = comp.detach()
           frames[:,:,f] = Fs[:,:,0]
           masks[:,:,f] = Hs[:,:,0]                
-          rfeats[:,:,f] = model(Fs, Hs)[:,:,0]
+          # rfeats[:,:,f] = model(Fs, Hs)[:,:,0]
 
         if t == 1:
           est = comp0[:,:,f] * (len(index)-f) / len(index) + comp.detach() * f / len(index)
