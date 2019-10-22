@@ -41,7 +41,7 @@ RESUME = args.e
 DATA_NAME = args.n
 MASK_TYPE = args.m
 
-w,h = 424, 240
+w,h = 432, 240
 default_fps = 6
 sample_length = 10
 
