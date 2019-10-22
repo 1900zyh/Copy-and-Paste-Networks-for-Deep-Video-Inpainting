@@ -85,7 +85,7 @@ def main_worker(gpu, ngpus_per_node, args):
   model.load_state_dict(data)
   model.eval() # turn-off BN
 
-  Pset = dataset(DATA_NAME, MASK_TYPE)
+  Pset = dataset(DATA_NAME, MASK_TYPE, size=(h,w))
   step = math.ceil(len(Pset) / ngpus_per_node)
   Pset = torch.utils.data.Subset(Pset, range(gpu*step, min(gpu*step+step, len(Pset))))
   Trainloader = torch.utils.data.DataLoader(Pset, batch_size=1, shuffle=False, num_workers=0, drop_last=True)
