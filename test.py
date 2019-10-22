@@ -43,7 +43,7 @@ MASK_TYPE = args.m
 
 w,h = 424, 240
 default_fps = 6
-sample_length = 5
+sample_length = 10
 
 
 # set parameter to gpu or cpu
