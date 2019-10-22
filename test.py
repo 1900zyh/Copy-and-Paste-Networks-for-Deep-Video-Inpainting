@@ -43,6 +43,7 @@ MASK_TYPE = args.m
 
 w,h = 424, 240
 default_fps = 6
+sample_length = 5
 
 
 # set parameter to gpu or cpu
@@ -132,7 +133,7 @@ def main_worker(gpu, ngpus_per_node, args):
           end = num_frames -1
             
         # interval: 2
-        for i in range(start, end, 2):
+        for i in range(start, end, sample_length):
           if i != f:
             ridx.append(i)
         
