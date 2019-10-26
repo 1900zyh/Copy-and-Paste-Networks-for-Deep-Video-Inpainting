@@ -42,7 +42,7 @@ DATA_NAME = args.n
 MASK_TYPE = args.m
 
 w,h = 432, 240
-default_fps = 16
+default_fps = 15
 sample_length = 2
 
 
