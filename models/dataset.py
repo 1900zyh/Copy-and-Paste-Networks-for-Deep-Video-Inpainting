@@ -121,11 +121,10 @@ class dataset(data.Dataset):
       m = cv2.dilate(m, cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3)), iterations=4)
       return m
     elif self.mask_type == 'random_obj':
-      m_name = self.video_dict[video][i]
-      m = ZipReader.imread('../datazip/random_masks/{}/{}.zip'.format(self.data_name, video),\
-           '{}.png'.format(m_name.split('.jpg')[0])).resize((self.w, self.h))
+      m = ZipReader.imread('../datazip/random_masks/{}.zip'.format(self.data_name),\
+            '{}.png'.format(video)).resize((w, h))
       m = np.array(m)
       m = np.array(m>0).astype(np.uint8)
-      return m 
+      return Image.fromarray(m*255)
     else:
       raise NotImplementedError(f"Mask type {self.mask_type} not exists")
