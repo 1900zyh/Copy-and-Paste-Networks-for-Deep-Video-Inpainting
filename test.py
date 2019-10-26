@@ -42,8 +42,8 @@ DATA_NAME = args.n
 MASK_TYPE = args.m
 
 w,h = 432, 240
-default_fps = 6
-sample_length = 10
+default_fps = 16
+sample_length = 2
 
 
 # set parameter to gpu or cpu
@@ -104,64 +104,68 @@ def main_worker(gpu, ngpus_per_node, args):
       rfeats = model(frames, masks)
     frames_ = frames.clone()
     masks_ = masks.clone() 
-    index = [f for f in reversed(range(num_frames))]
+    # index = [f for f in reversed(range(num_frames))]
+    index= [f for f in range(num_frames)]
     comp_frames = []
     pred_frames = []
     mask_frames = []
     orig_frames = []
         
-    for t in range(2): # forward : 0, backward : 1
-      if t == 1:
-        comp0 = frames.clone()
-        frames = frames_
-        masks = masks_
-        index.reverse()
+    # for t in range(1): # forward : 0, backward : 1
+    '''
+    if t == 1:
+      comp0 = frames.clone()
+      frames = frames_
+      masks = masks_
+      index.reverse()
+    '''
 
-      for f in index:
-        ridx = []
-        start = f - num_length
-        end = f + num_length
-        if f - num_length < 0:
-          end = (f + num_length) - (f - num_length)
-          if end > num_frames:
-            end = num_frames -1
-          start = 0
-        elif f + num_length > num_frames:
-          start = (f - num_length) - (f + num_length - num_frames)
-          if start < 0:
-            start = 0
+    for f in index:
+      ridx = []
+      start = f - num_length
+      end = f + num_length
+      if f - num_length < 0:
+        end = (f + num_length) - (f - num_length)
+        if end > num_frames:
           end = num_frames -1
-            
-        # interval: 2
-        for i in range(start, end, sample_length):
-          if i != f:
-            ridx.append(i)
-        
-        with torch.no_grad():
-          comp, pred, masked, orig = model(rfeats[:,:,ridx], frames[:,:,ridx], masks[:,:,ridx], frames[:,:,f], masks[:,:,f], GTs[:,:,f])
-          c_s = comp.shape
-          Fs = torch.empty((c_s[0], c_s[1], 1, c_s[2], c_s[3])).float().cuda()
-          Hs = torch.zeros((c_s[0], 1, 1, c_s[2], c_s[3])).float().cuda()
-          Fs[:,:,0] = comp.detach()
-          frames[:,:,f] = Fs[:,:,0]
-          masks[:,:,f] = Hs[:,:,0]                
-          # rfeats[:,:,f] = model(Fs, Hs)[:,:,0]
-
-        if t == 1:
-          est = comp0[:,:,f] * (len(index)-f) / len(index) + comp.detach() * f / len(index)
-          comp = (est[0].cpu().permute(1,2,0).numpy() * 255.).astype(np.uint8)
-          pred = (pred[0].cpu().permute(1,2,0).numpy() * 255.).astype(np.uint8)
-          masked = (masked[0].cpu().permute(1,2,0).numpy() * 255.).astype(np.uint8)
-          orig = (orig[0].cpu().permute(1,2,0).numpy() * 255.).astype(np.uint8)
-          if comp.shape[1] % 2 != 0:
-            comp = np.pad(comp, [[0,0],[0,1],[0,0]], mode='constant')
-            pred = np.pad(pred, [[0,0],[0,1],[0,0]], mode='constant')
-            masked = np.pad(masked, [[0,0],[0,1],[0,0]], mode='constant')
-            orig = np.pad(orig, [[0,0],[0,1],[0,0]], mode='constant')
-          comp_frames.append(cv2.cvtColor(comp, cv2.COLOR_BGR2RGB))
-          pred_frames.append(cv2.cvtColor(pred, cv2.COLOR_BGR2RGB))
-          mask_frames.append(cv2.cvtColor(masked, cv2.COLOR_BGR2RGB))
-          orig_frames.append(cv2.cvtColor(orig, cv2.COLOR_BGR2RGB))
+        start = 0
+      elif f + num_length > num_frames:
+        start = (f - num_length) - (f + num_length - num_frames)
+        if start < 0:
+          start = 0
+        end = num_frames -1
+          
+      # interval: 2
+      for i in range(start, end, sample_length):
+        if i != f:
+          ridx.append(i)
+      
+      with torch.no_grad():
+        # disable frames updating 
+        comp, pred, masked, orig = model(rfeats[:,:,ridx], frames[:,:,ridx], masks[:,:,ridx], frames[:,:,f], masks[:,:,f], GTs[:,:,f])
+        # c_s = comp.shape
+        # Fs = torch.empty((c_s[0], c_s[1], 1, c_s[2], c_s[3])).float().cuda()
+        # Hs = torch.zeros((c_s[0], 1, 1, c_s[2], c_s[3])).float().cuda()
+        # Fs[:,:,0] = comp.detach()
+        # frames[:,:,f] = Fs[:,:,0]
+        # masks[:,:,f] = Hs[:,:,0]                
+        # rfeats[:,:,f] = model(Fs, Hs)[:,:,0]
+      # if t == 1:
+        # est = comp0[:,:,f] * (len(index)-f) / len(index) + comp.detach() * f / len(index)
+        est = comp.detach()
+        comp = (est[0].cpu().permute(1,2,0).numpy() * 255.).astype(np.uint8)
+        pred = (pred[0].cpu().permute(1,2,0).numpy() * 255.).astype(np.uint8)
+        masked = (masked[0].cpu().permute(1,2,0).numpy() * 255.).astype(np.uint8)
+        orig = (orig[0].cpu().permute(1,2,0).numpy() * 255.).astype(np.uint8)
+        if comp.shape[1] % 2 != 0:
+          comp = np.pad(comp, [[0,0],[0,1],[0,0]], mode='constant')
+          pred = np.pad(pred, [[0,0],[0,1],[0,0]], mode='constant')
+          masked = np.pad(masked, [[0,0],[0,1],[0,0]], mode='constant')
+          orig = np.pad(orig, [[0,0],[0,1],[0,0]], mode='constant')
+        comp_frames.append(cv2.cvtColor(comp, cv2.COLOR_BGR2RGB))
+        pred_frames.append(cv2.cvtColor(pred, cv2.COLOR_BGR2RGB))
+        mask_frames.append(cv2.cvtColor(masked, cv2.COLOR_BGR2RGB))
+        orig_frames.append(cv2.cvtColor(orig, cv2.COLOR_BGR2RGB))
 
     os.makedirs(os.path.join(save_path, seq_name), exist_ok=True)
     comp_writer = cv2.VideoWriter(os.path.join(save_path, seq_name, 'comp.avi'),
