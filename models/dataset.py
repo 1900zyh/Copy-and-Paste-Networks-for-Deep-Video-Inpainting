@@ -125,6 +125,6 @@ class dataset(data.Dataset):
             '{}.png'.format(video)).resize((w, h))
       m = np.array(m)
       m = np.array(m>0).astype(np.uint8)
-      return Image.fromarray(m*255)
+      return m
     else:
       raise NotImplementedError(f"Mask type {self.mask_type} not exists")
